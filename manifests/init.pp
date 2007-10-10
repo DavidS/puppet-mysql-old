@@ -14,7 +14,7 @@ class mysql::server {
 
 	service { mysql:
 		ensure => running,
-		pattern => "mysqld",
+		hasstatus => true,
 		require => Package["mysql-server"],
 	}
 
