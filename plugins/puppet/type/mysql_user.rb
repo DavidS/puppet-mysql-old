@@ -8,8 +8,8 @@ Puppet::Type.newtype(:mysql_user) do
 	newparam(:host) do
 		desc "The host from where to connect."
 	end
-	newparam(:password) do
-		desc "The password of the user."
+	newproperty(:password_hash) do
+		desc "The password hash of the user. Use mysql_password() for creating such a hash."
 	end
 end
 

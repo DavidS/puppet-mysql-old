@@ -15,5 +15,13 @@ Puppet::Type.type(:mysql_user).provide(:mysql) do
 			false
 		end
 	end
+
+	def password_hash
+		mysql("mysql", "-NBe", "select password from user where user='#{@resource[:name]}' and host='#{@resource[:host]}'").chomp
+	end
+
+	def password_hash=(string)
+		mysql "mysql", "-e", "SET PASSWORD FOR '#{@resource[:name]}'@'#{@resource[:host]}' = PASSWORD('#{string}')"
+	end
 end
 
