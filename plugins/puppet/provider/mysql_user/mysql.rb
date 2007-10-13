@@ -21,7 +21,7 @@ Puppet::Type.type(:mysql_user).provide(:mysql) do
 	end
 
 	def password_hash=(string)
-		mysql "mysql", "-e", "SET PASSWORD FOR '#{@resource[:name]}'@'#{@resource[:host]}' = PASSWORD('#{string}')"
+		mysql "mysql", "-e", "SET PASSWORD FOR '#{@resource[:name]}'@'#{@resource[:host]}' = '#{string}'"
 	end
 end
 
