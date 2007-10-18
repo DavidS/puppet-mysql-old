@@ -21,5 +21,6 @@ class mysql::server {
 	# Collect all databases and users
 	Mysql_database<<||>>
 	Mysql_user<<||>>
+	Mysql_grant<<||>>
 
 }
