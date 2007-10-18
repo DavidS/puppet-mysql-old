@@ -1,4 +1,3 @@
-
-err("Will remove 'test_db' again")
+err("Will remove 'test_db'")
 mysql_database { "test_db": ensure => absent }
 

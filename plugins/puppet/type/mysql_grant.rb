@@ -59,7 +59,14 @@ Puppet::Type.newtype(:mysql_grant) do
 		# use the sorted outputs for comparison
 		def insync?(is)
 			if defined? @should and @should
-				self.is_to_s(is) == self.should_to_s
+				case self.should_to_s 
+				when "all"
+					self.provider.all_privs_set?
+				when self.is_to_s(is)
+					true
+				else
+					false
+				end
 			else
 				true
 			end

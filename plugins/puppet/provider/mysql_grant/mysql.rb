@@ -5,6 +5,21 @@
 
 require 'puppet/provider/package'
 
+MYSQL_USER_PRIVS = [ :select_priv, :insert_priv, :update_priv, :delete_priv,
+	:create_priv, :drop_priv, :reload_priv, :shutdown_priv, :process_priv,
+	:file_priv, :grant_priv, :references_priv, :index_priv, :alter_priv,
+	:show_db_priv, :super_priv, :create_tmp_table_priv, :lock_tables_priv,
+	:execute_priv, :repl_slave_priv, :repl_client_priv, :create_view_priv,
+	:show_view_priv, :create_routine_priv, :alter_routine_priv,
+	:create_user_priv
+]
+
+MYSQL_DB_PRIVS = [ :select_priv, :insert_priv, :update_priv, :delete_priv,
+	:create_priv, :drop_priv, :grant_priv, :references_priv, :index_priv,
+	:alter_priv, :create_tmp_table_priv, :lock_tables_priv, :create_view_priv,
+	:show_view_priv, :create_routine_priv, :alter_routine_priv, :execute_priv
+]
+
 Puppet::Type.type(:mysql_grant).provide(:mysql) do
 
 	desc "Uses mysql as database."
@@ -66,8 +81,18 @@ Puppet::Type.type(:mysql_grant).provide(:mysql) do
 		not mysql( "mysql", "-NBe", 'SELECT "1" FROM %s WHERE %s' % [ name[:type], fields.map do |f| "%s = '%s'" % [f, name[f]] end.join(' AND ')]).empty?
 	end
 
-	# privileges "exist" always, it's just the setting we are interested in
-	# def exists?  @resource.should( end
+	def all_privs_set?
+		all_privs = case split_name(@resource[:name])[:type]
+			when :user
+				MYSQL_USER_PRIVS
+			when :db
+				MYSQL_DB_PRIVS
+		end
+		all_privs = all_privs.collect do |p| p.to_s end.sort.join("|")
+		privs = privileges.collect do |p| p.to_s end.sort.join("|")
+
+		all_privs == privs
+	end
 
 	def privileges 
 		name = split_name(@resource[:name])
@@ -94,21 +119,6 @@ Puppet::Type.type(:mysql_grant).provide(:mysql) do
 	end
 
 	def privileges=(privs) 
-		user_privs = [ :select_priv, :insert_priv, :update_priv, :delete_priv,
-			:create_priv, :drop_priv, :reload_priv, :shutdown_priv,
-			:process_priv, :file_priv, :grant_priv, :references_priv,
-			:index_priv, :alter_priv, :show_db_priv, :super_priv,
-			:create_tmp_table_priv, :lock_tables_priv, :execute_priv,
-			:repl_slave_priv, :repl_client_priv, :create_view_priv,
-			:show_view_priv, :create_routine_priv, :alter_routine_priv,
-			:create_user_priv ]
-
-		db_privs = [ :select_priv, :insert_priv, :update_priv, :delete_priv,
-			:create_priv, :drop_priv, :grant_priv, :references_priv,
-			:index_priv, :alter_priv, :create_tmp_table_priv, :lock_tables_priv,
-			:create_view_priv, :show_view_priv, :create_routine_priv,
-			:alter_routine_priv, :execute_priv ]
-
 		unless row_exists?
 			create_row
 		end
@@ -122,11 +132,15 @@ Puppet::Type.type(:mysql_grant).provide(:mysql) do
 		when :user
 			stmt = 'update user set '
 			where = ' where user="%s" and host="%s"' % [ name[:user], name[:host] ]
-			all_privs = user_privs
+			all_privs = MYSQL_USER_PRIVS
 		when :db
 			stmt = 'update db set '
 			where = ' where user="%s" and host="%s"' % [ name[:user], name[:host] ]
-			all_privs = db_privs
+			all_privs = MYSQL_DB_PRIVS
+		end
+
+		if privs[0] == :all 
+			privs = all_privs
 		end
 	
 		# puts "stmt:", stmt
