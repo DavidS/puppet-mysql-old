@@ -3,8 +3,11 @@
 # 	user@host => global
 # 	user@host/db => per-db
 
+require 'puppet/provider/package'
+
 Puppet::Type.type(:mysql_grant).provide(:mysql) do
-	desc "Use mysql as database."
+
+	desc "Uses mysql as database."
 
 	commands :mysql => '/usr/bin/mysql'
 
@@ -28,35 +31,37 @@ Puppet::Type.type(:mysql_grant).provide(:mysql) do
 		end
 	end
 
-	def create
-		name = split_name(@resource[:name])
-		case name[:type]
-		when :user
-			mysql "mysql", "-e", "INSERT INTO user (host, user, %s) VALUES ('%s', '%s', %s)" % [
-				@resource.should(:privileges).join(","),
-				name[:host], name[:user],
-				@resource.should(:privileges).map do |m| "'Y'" end.join(",")
-			]
-		when :db
-			mysql "mysql", "-e", "INSERT INTO db (host, user, db, %s) VALUES ('%s', '%s', '%s', %s)" % [
-				@resource.should(:privileges).join(","),
-				name[:host], name[:user], name[:db],
-				@resource.should(:privileges).map do |m| "'Y'" end.join(",")
-			]
+	def create_row
+		unless @resource.should(:privileges).empty?
+			name = split_name(@resource[:name])
+			case name[:type]
+			when :user
+				mysql "mysql", "-e", "INSERT INTO user (host, user) VALUES ('%s', '%s')" % [
+					name[:host], name[:user],
+				]
+			when :db
+				mysql "mysql", "-e", "INSERT INTO db (host, user, db) VALUES ('%s', '%s', '%s')" % [
+					name[:host], name[:user], name[:db],
+				]
+			end
 		end
 	end
+
 	def destroy
-		#mysql "mysql", "-e", "REVOKE %s ON '%s'.* FROM '%s@%s'" % [ @resource[:privileges], @resource[:database], @resource[:name], @resource[:host] ]
+		mysql "mysql", "-e", "REVOKE ALL ON '%s'.* FROM '%s@%s'" % [ @resource[:privileges], @resource[:database], @resource[:name], @resource[:host] ]
 	end
 	
-	def exists?
+	def row_exists?
 		name = split_name(@resource[:name])
 		fields = [:user, :host]
 		if name[:type] == :db
 			fields << :db
 		end
-		mysql( "mysql", "-Be", 'SELECT user FROM %s WHERE %s' % [ name[:type], fields.map do |f| "%s = '%s'" % [f, name[f]] end.join(' AND ')])
+		not mysql( "mysql", "-NBe", 'SELECT "1" FROM %s WHERE %s' % [ name[:type], fields.map do |f| "%s = '%s'" % [f, name[f]] end.join(' AND ')]).empty?
 	end
+
+	# privileges "exist" always, it's just the setting we are interested in
+	# def exists?  @resource.should( end
 
 	def privileges 
 		name = split_name(@resource[:name])
@@ -98,9 +103,11 @@ Puppet::Type.type(:mysql_grant).provide(:mysql) do
 			:create_view_priv, :show_view_priv, :create_routine_priv,
 			:alter_routine_priv, :execute_priv ]
 
-		begin
+		unless row_exists?
+			create_row
+		end
 
-				  puts "Setting privs: ", privs.join(", ")
+		# puts "Setting privs: ", privs.join(", ")
 		name = split_name(@resource[:name])
 		stmt = ''
 		where = ''
@@ -116,16 +123,12 @@ Puppet::Type.type(:mysql_grant).provide(:mysql) do
 			all_privs = db_privs
 		end
 	
-		puts "stmt:", stmt
+		# puts "stmt:", stmt
 		set = all_privs.collect do |p| "%s = '%s'" % [p, privs.include?(p) ? 'Y' : 'N'] end.join(', ')
-		puts "set:", set
+		# puts "set:", set
 		stmt = stmt << set << where
 
 		mysql "mysql", "-Be", stmt
-		rescue NoMethodError => detail
-			puts detail.backtrace
-			puts detail.to_s
-		end
 	end
 end
 

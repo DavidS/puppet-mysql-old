@@ -1,7 +1,17 @@
 # This has to be a separate type to enable collecting
 Puppet::Type.newtype(:mysql_grant) do
 	@doc = "Manage a database user's rights."
-	ensurable
+	#ensurable
+
+	autorequire :mysql_user do
+		reqs = []
+		matches = self[:name].match(/^([^@]+)@([^\/]+)$/)
+		unless matches.nil?
+			reqs << "%s@%s" % [ matches[0], matches[1] ]
+		end
+		reqs
+	end
+
 	newparam(:name) do
 		desc "The primary key: either user@host for global privilges or user@host/database for database specific privileges"
 	end
@@ -10,6 +20,38 @@ Puppet::Type.newtype(:mysql_grant) do
 		munge do |v|
 			symbolize(v)
 		end
+
+		def should_to_s(newvalue = @should)
+			if newvalue
+				unless newvalue.is_a?(Array)
+					newvalue = [ newvalue ]
+				end
+				newvalue.collect do |v| v.to_s end.sort.join ", "
+			else
+				nil
+			end
+		end
+
+		def is_to_s(currentvalue = @is)
+			if currentvalue
+				unless currentvalue.is_a?(Array)
+					currentvalue = [ currentvalue ]
+				end
+				currentvalue.collect do |v| v.to_s end.sort.join ", "
+			else
+				nil
+			end
+		end
+
+		# use the sorted outputs for comparison
+		def insync?(is)
+			if defined? @should and @should
+				self.is_to_s(is) == self.should_to_s
+			else
+				true
+			end
+		end
+
 	end
 end
 
