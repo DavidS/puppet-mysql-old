@@ -6,6 +6,7 @@ Puppet::Type.type(:mysql_user).provide(:mysql,
 
 	desc "Use mysql as database."
 	commands :mysql => '/usr/bin/mysql'
+	commands :mysqladmin => '/usr/bin/mysqladmin'
 
 	# retrieve the current set of mysql users
 	def self.instances
@@ -29,6 +30,10 @@ Puppet::Type.type(:mysql_user).provide(:mysql,
 		}
 	end
 
+	def mysql_flush 
+		mysqladmin "flush-privileges"
+	end
+
 	def query
 		result = {}
 
@@ -47,10 +52,12 @@ Puppet::Type.type(:mysql_user).provide(:mysql,
 
 	def create
 		mysql "mysql", "-e", "create user '%s' identified by PASSWORD '%s'" % [ @resource[:name].sub("@", "'@'"), @resource.should(:password_hash) ]
+		mysql_flush
 	end
 
 	def destroy
 		mysql "mysql", "-e", "drop user '%s'" % @resource[:name].sub("@", "'@'")
+		mysql_flush
 	end
 
 	def exists?
@@ -63,6 +70,7 @@ Puppet::Type.type(:mysql_user).provide(:mysql,
 
 	def password_hash=(string)
 		mysql "mysql", "-e", "SET PASSWORD FOR '%s' = '%s'" % [ @resource[:name].sub("@", "'@'"), string ]
+		mysql_flush
 	end
 end
 

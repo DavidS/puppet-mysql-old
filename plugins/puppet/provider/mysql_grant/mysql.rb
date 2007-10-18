@@ -10,6 +10,11 @@ Puppet::Type.type(:mysql_grant).provide(:mysql) do
 	desc "Uses mysql as database."
 
 	commands :mysql => '/usr/bin/mysql'
+	commands :mysqladmin => '/usr/bin/mysqladmin'
+
+	def mysql_flush 
+		mysqladmin "flush-privileges"
+	end
 
 	# this parses the
 	def split_name(string)
@@ -44,6 +49,7 @@ Puppet::Type.type(:mysql_grant).provide(:mysql) do
 					name[:host], name[:user], name[:db],
 				]
 			end
+			mysql_flush
 		end
 	end
 
@@ -129,6 +135,7 @@ Puppet::Type.type(:mysql_grant).provide(:mysql) do
 		stmt = stmt << set << where
 
 		mysql "mysql", "-Be", stmt
+		mysql_flush
 	end
 end
 
