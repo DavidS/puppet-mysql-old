@@ -4,6 +4,8 @@ Puppet::Type.newtype(:mysql_database) do
 	ensurable
 	newparam(:name) do
 		desc "The name of the database."
+
+		# TODO: only [[:alnum:]_] allowed
 	end
 end
 
