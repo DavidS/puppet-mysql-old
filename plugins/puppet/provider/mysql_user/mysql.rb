@@ -12,7 +12,7 @@ Puppet::Type.type(:mysql_user).provide(:mysql,
 	def self.instances
 		users = []
 
-		cmd = "#{command(:mysql)} mysql -NBe 'select concat(user, \"@\", host), password from user'"
+		cmd = "#{command(:mysql)} --defaults-file=/etc/mysql/debian.cnf mysql -NBe 'select concat(user, \"@\", host), password from user'"
 		execpipe(cmd) do |process|
 			process.each do |line|
 				users << new( query_line_to_hash(line) )
@@ -37,7 +37,7 @@ Puppet::Type.type(:mysql_user).provide(:mysql,
 	def query
 		result = {}
 
-		cmd = "#{command(:mysql)} -NBe 'select concat(user, \"@\", host), password from user where concat(user, \"@\", host) = \"%s\"'" % @resource[:name]
+		cmd = "#{command(:mysql)} --defaults-file=/etc/mysql/debian.cnf mysql -NBe 'select concat(user, \"@\", host), password from user where concat(user, \"@\", host) = \"%s\"'" % @resource[:name]
 		execpipe(cmd) do |process|
 			process.each do |line|
 				unless result.empty?
@@ -51,17 +51,17 @@ Puppet::Type.type(:mysql_user).provide(:mysql,
 	end
 
 	def create
-		mysql "mysql", "-e", "create user '%s' identified by PASSWORD '%s'" % [ @resource[:name].sub("@", "'@'"), @resource.should(:password_hash) ]
+		mysql "--defaults-file=/etc/mysql/debian.cnf", "mysql", "-e", "create user '%s' identified by PASSWORD '%s'" % [ @resource[:name].sub("@", "'@'"), @resource.should(:password_hash) ]
 		mysql_flush
 	end
 
 	def destroy
-		mysql "mysql", "-e", "drop user '%s'" % @resource[:name].sub("@", "'@'")
+		mysql "--defaults-file=/etc/mysql/debian.cnf", "mysql", "-e", "drop user '%s'" % @resource[:name].sub("@", "'@'")
 		mysql_flush
 	end
 
 	def exists?
-		not mysql("mysql", "-NBe", "select '1' from user where CONCAT(user, '@', host) = '%s'" % @resource[:name]).empty?
+		not mysql("--defaults-file=/etc/mysql/debian.cnf", "mysql", "-NBe", "select '1' from user where CONCAT(user, '@', host) = '%s'" % @resource[:name]).empty?
 	end
 
 	def password_hash
@@ -69,7 +69,7 @@ Puppet::Type.type(:mysql_user).provide(:mysql,
 	end
 
 	def password_hash=(string)
-		mysql "mysql", "-e", "SET PASSWORD FOR '%s' = '%s'" % [ @resource[:name].sub("@", "'@'"), string ]
+		mysql "--defaults-file=/etc/mysql/debian.cnf", "mysql", "-e", "SET PASSWORD FOR '%s' = '%s'" % [ @resource[:name].sub("@", "'@'"), string ]
 		mysql_flush
 	end
 end

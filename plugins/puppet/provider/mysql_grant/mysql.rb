@@ -28,7 +28,7 @@ Puppet::Type.type(:mysql_grant).provide(:mysql) do
 	commands :mysqladmin => '/usr/bin/mysqladmin'
 
 	def mysql_flush 
-		mysqladmin "flush-privileges"
+		mysqladmin "--defaults-file=/etc/mysql/debian.cnf", "flush-privileges"
 	end
 
 	# this parses the
@@ -56,11 +56,11 @@ Puppet::Type.type(:mysql_grant).provide(:mysql) do
 			name = split_name(@resource[:name])
 			case name[:type]
 			when :user
-				mysql "mysql", "-e", "INSERT INTO user (host, user) VALUES ('%s', '%s')" % [
+				mysql "--defaults-file=/etc/mysql/debian.cnf", "mysql", "-e", "INSERT INTO user (host, user) VALUES ('%s', '%s')" % [
 					name[:host], name[:user],
 				]
 			when :db
-				mysql "mysql", "-e", "INSERT INTO db (host, user, db) VALUES ('%s', '%s', '%s')" % [
+				mysql "--defaults-file=/etc/mysql/debian.cnf", "mysql", "-e", "INSERT INTO db (host, user, db) VALUES ('%s', '%s', '%s')" % [
 					name[:host], name[:user], name[:db],
 				]
 			end
@@ -69,7 +69,7 @@ Puppet::Type.type(:mysql_grant).provide(:mysql) do
 	end
 
 	def destroy
-		mysql "mysql", "-e", "REVOKE ALL ON '%s'.* FROM '%s@%s'" % [ @resource[:privileges], @resource[:database], @resource[:name], @resource[:host] ]
+		mysql "--defaults-file=/etc/mysql/debian.cnf", "mysql", "-e", "REVOKE ALL ON '%s'.* FROM '%s@%s'" % [ @resource[:privileges], @resource[:database], @resource[:name], @resource[:host] ]
 	end
 	
 	def row_exists?
@@ -78,7 +78,7 @@ Puppet::Type.type(:mysql_grant).provide(:mysql) do
 		if name[:type] == :db
 			fields << :db
 		end
-		not mysql( "mysql", "-NBe", 'SELECT "1" FROM %s WHERE %s' % [ name[:type], fields.map do |f| "%s = '%s'" % [f, name[f]] end.join(' AND ')]).empty?
+		not mysql("--defaults-file=/etc/mysql/debian.cnf", "mysql", "-NBe", 'SELECT "1" FROM %s WHERE %s' % [ name[:type], fields.map do |f| "%s = '%s'" % [f, name[f]] end.join(' AND ')]).empty?
 	end
 
 	def all_privs_set?
@@ -100,9 +100,9 @@ Puppet::Type.type(:mysql_grant).provide(:mysql) do
 
 		case name[:type]
 		when :user
-			privs = mysql "mysql", "-Be", 'select * from user where user="%s" and host="%s"' % [ name[:user], name[:host] ]
+			privs = mysql "--defaults-file=/etc/mysql/debian.cnf", "mysql", "-Be", 'select * from user where user="%s" and host="%s"' % [ name[:user], name[:host] ]
 		when :db
-			privs = mysql "mysql", "-Be", 'select * from db where user="%s" and host="%s" and db="%s"' % [ name[:user], name[:host], name[:db] ]
+			privs = mysql "--defaults-file=/etc/mysql/debian.cnf", "mysql", "-Be", 'select * from db where user="%s" and host="%s" and db="%s"' % [ name[:user], name[:host], name[:db] ]
 		end
 
 		if privs.match(/^$/) 
@@ -148,7 +148,7 @@ Puppet::Type.type(:mysql_grant).provide(:mysql) do
 		# puts "set:", set
 		stmt = stmt << set << where
 
-		mysql "mysql", "-Be", stmt
+		mysql "--defaults-file=/etc/mysql/debian.cnf", "mysql", "-Be", stmt
 		mysql_flush
 	end
 end

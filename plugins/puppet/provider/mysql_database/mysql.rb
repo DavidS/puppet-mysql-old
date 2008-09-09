@@ -11,7 +11,7 @@ Puppet::Type.type(:mysql_database).provide(:mysql,
 	def self.instances
 		dbs = []
 
-		cmd = "#{command(:mysql)} mysql -NBe 'show databases'"
+		cmd = "#{command(:mysql)} --defaults-file=/etc/mysql/debian.cnf mysql -NBe 'show databases'"
 		execpipe(cmd) do |process|
 			process.each do |line|
 				dbs << new( { :ensure => :present, :name => line.chomp } )
@@ -26,7 +26,7 @@ Puppet::Type.type(:mysql_database).provide(:mysql,
 			:ensure => :absent
 		}
 
-		cmd = "#{command(:mysql)} mysql -NBe 'show databases'"
+		cmd = "#{command(:mysql)} --defaults-file=/etc/mysql/debian.cnf mysql -NBe 'show databases'"
 		execpipe(cmd) do |process|
 			process.each do |line|
 				if line.chomp.eql?(@resource[:name])
@@ -38,14 +38,14 @@ Puppet::Type.type(:mysql_database).provide(:mysql,
 	end
 
 	def create
-		mysqladmin "create", @resource[:name]
+		mysqladmin "--defaults-file=/etc/mysql/debian.cnf", "create", @resource[:name]
 	end
 	def destroy
-		mysqladmin "-f", "drop", @resource[:name]
+		mysqladmin "--defaults-file=/etc/mysql/debian.cnf", "-f", "drop", @resource[:name]
 	end
 
 	def exists?
-		if mysql("mysql", "-NBe", "show databases").match(/^#{@resource[:name]}$/)
+		if mysql("--defaults-file=/etc/mysql/debian.cnf", "mysql", "-NBe", "show databases").match(/^#{@resource[:name]}$/)
 			true
 		else
 			false
