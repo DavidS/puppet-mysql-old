@@ -31,7 +31,7 @@ Puppet::Type.type(:mysql_user).provide(:mysql,
 	end
 
 	def mysql_flush 
-		mysqladmin "flush-privileges"
+		mysqladmin "--defaults-file=/etc/mysql/debian.cnf", "flush-privileges"
 	end
 
 	def query
