@@ -10,6 +10,7 @@ class mysql::server {
 
 	munin::plugin {
 		[mysql_bytes, mysql_queries, mysql_slowqueries, mysql_threads]:
+			config => "env.mysqlopts --defaults-file=/etc/mysql/debian.cnf\nuser root"
 	}
 
 	service { mysql:
