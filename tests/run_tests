@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export RUBYLIB=${RUBYLIB:-../plugins}
+export RUBYLIB=${RUBYLIB:-../lib}
 OPTIONS="$*"
 OPTIONS="${OPTIONS:---trace}"
 
