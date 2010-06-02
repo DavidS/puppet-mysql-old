@@ -8,19 +8,6 @@ Puppet::Type.type(:mysql_user).provide(:mysql,
 	commands :mysql => '/usr/bin/mysql'
 	commands :mysqladmin => '/usr/bin/mysqladmin'
 
-	# retrieve the current set of mysql users
-	def self.instances
-		users = []
-
-		cmd = "#{command(:mysql)} --defaults-file=/etc/mysql/debian.cnf mysql -NBe 'select concat(user, \"@\", host), password from user'"
-		execpipe(cmd) do |process|
-			process.each do |line|
-				users << new( query_line_to_hash(line) )
-			end
-		end
-		return users
-	end
-
 	def self.query_line_to_hash(line)
 		fields = line.chomp.split(/\t/)
 		{
@@ -30,14 +17,23 @@ Puppet::Type.type(:mysql_user).provide(:mysql,
 		}
 	end
 
+	def munge_args(*args)
+		@resource[:defaults] ||= ""
+		if @resource[:defaults] != "" 
+			[ "--defaults-file="+@resource[:defaults] ] + args
+		else
+			args
+		end
+	end
+
 	def mysql_flush 
-		mysqladmin "--defaults-file=/etc/mysql/debian.cnf", "flush-privileges"
+		mysqladmin munge_args("flush-privileges")
 	end
 
 	def query
 		result = {}
 
-		cmd = "#{command(:mysql)} --defaults-file=/etc/mysql/debian.cnf mysql -NBe 'select concat(user, \"@\", host), password from user where concat(user, \"@\", host) = \"%s\"'" % @resource[:name]
+		cmd = ( [ command(:mysql) ] + munge_args("mysql", "-NBe", "'select concat(user, \"@\", host), password from user where concat(user, \"@\", host) = \"%s\"'" % @resource[:name]) ).join(" ")
 		execpipe(cmd) do |process|
 			process.each do |line|
 				unless result.empty?
@@ -51,12 +47,12 @@ Puppet::Type.type(:mysql_user).provide(:mysql,
 	end
 
 	def create
-		mysql "--defaults-file=/etc/mysql/debian.cnf", "mysql", "-e", "create user '%s' identified by PASSWORD '%s'" % [ @resource[:name].sub("@", "'@'"), @resource.should(:password_hash) ]
+		mysql munge_args("mysql", "-e", "create user '%s' identified by PASSWORD '%s'" % [ @resource[:name].sub("@", "'@'"), @resource.should(:password_hash) ])
 		mysql_flush
 	end
 
 	def destroy
-		mysql "--defaults-file=/etc/mysql/debian.cnf", "mysql", "-e", "drop user '%s'" % @resource[:name].sub("@", "'@'")
+		mysql munge_args("mysql", "-e", "drop user '%s'" % @resource[:name].sub("@", "'@'"))
 		mysql_flush
 	end
 

@@ -73,5 +73,12 @@ Puppet::Type.newtype(:mysql_grant) do
 		end
 
 	end
+
+	newparam(:defaults) do
+		desc "A my.cnf file containing defaults to connect to the DB server"
+		defaultto ""
+
+		# TODO: only valid paths allowed
+	end
 end
 

@@ -1,0 +1,9 @@
+
+Primitive native types to manage MySQL databases, users and grants.
+
+Debian systems need to put this in their site.pp:
+
+    # mysql defaults
+    Mysql_database { defaults => "/etc/mysql/debian.cnf" }
+    Mysql_user { defaults => "/etc/mysql/debian.cnf" }
+    Mysql_grant { defaults => "/etc/mysql/debian.cnf" }
