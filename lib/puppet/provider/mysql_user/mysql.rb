@@ -57,7 +57,7 @@ Puppet::Type.type(:mysql_user).provide(:mysql,
 	end
 
 	def exists?
-		not mysql("--defaults-file=/etc/mysql/debian.cnf", "mysql", "-NBe", "select '1' from user where CONCAT(user, '@', host) = '%s'" % @resource[:name]).empty?
+		not mysql("--defaults-file="+@resource[:defaults], "mysql", "-NBe", "select '1' from user where CONCAT(user, '@', host) = '%s'" % @resource[:name]).empty?
 	end
 
 	def password_hash
@@ -65,7 +65,7 @@ Puppet::Type.type(:mysql_user).provide(:mysql,
 	end
 
 	def password_hash=(string)
-		mysql "--defaults-file=/etc/mysql/debian.cnf", "mysql", "-e", "SET PASSWORD FOR '%s' = '%s'" % [ @resource[:name].sub("@", "'@'"), string ]
+		mysql "--defaults-file="+@resource[:defaults], "mysql", "-e", "SET PASSWORD FOR '%s' = '%s'" % [ @resource[:name].sub("@", "'@'"), string ]
 		mysql_flush
 	end
 end
