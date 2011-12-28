@@ -8,6 +8,10 @@ Puppet::Type.type(:mysql_user).provide(:mysql,
 	commands :mysql => '/usr/bin/mysql'
 	commands :mysqladmin => '/usr/bin/mysqladmin'
 
+	def self.instances
+		[]
+	end
+
 	def self.query_line_to_hash(line)
 		fields = line.chomp.split(/\t/)
 		{

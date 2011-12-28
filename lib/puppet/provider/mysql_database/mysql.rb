@@ -7,6 +7,10 @@ Puppet::Type.type(:mysql_database).provide(:mysql,
 	commands :mysqladmin => '/usr/bin/mysqladmin'
 	commands :mysql => '/usr/bin/mysql'
 
+	def self.instances
+		[]
+	end
+
 	def munge_args(*args)
 		@resource[:defaults] ||= ""
 		if @resource[:defaults] != "" 
